@@ -1,0 +1,49 @@
+# Sample Google Maps Search Queries
+# One query per line
+# Lines starting with # are ignored
+
+# Restaurants
+restaurants in Tehran
+best restaurants in Dubai
+Italian restaurants in London
+sushi restaurants in Tokyo
+
+# Coffee Shops
+coffee shops in Tehran
+cafes in Paris
+specialty coffee in New York
+
+# Hotels
+hotels in Tehran
+luxury hotels in Dubai
+budget hotels in Bangkok
+
+# Healthcare
+dentists in Tehran
+doctors in Dubai
+hospitals in London
+
+# Professional Services
+lawyers in Tehran
+accountants in Dubai
+consultants in Singapore
+
+# Retail
+clothing stores in Tehran
+electronics shops in Dubai
+bookstores in London
+
+# Beauty & Wellness
+hair salons in Tehran
+spa centers in Dubai
+gyms in New York
+
+# Education
+language schools in Tehran
+universities in London
+tutoring centers in Dubai
+
+# Automotive
+car repair shops in Tehran
+auto dealers in Dubai
+tire shops in London

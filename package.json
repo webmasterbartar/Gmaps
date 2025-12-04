@@ -1,0 +1,29 @@
+{
+  "name": "google-maps-scraper",
+  "version": "1.0.0",
+  "description": "Professional high-speed Google Maps contact scraper with MongoDB",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node index.js --test-mode --queries 5"
+  },
+  "keywords": [
+    "puppeteer",
+    "scraper",
+    "google-maps",
+    "mongodb"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "puppeteer": "^23.11.1",
+    "mongodb": "^6.3.0",
+    "p-queue": "^8.0.1",
+    "chalk": "^5.3.0",
+    "cli-progress": "^3.12.0",
+    "dotenv": "^16.3.1"
+  }
+}

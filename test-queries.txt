@@ -1,0 +1,6 @@
+# Sample test queries for initial testing
+# Just 3 queries to test functionality
+
+restaurants in Dubai
+coffee shops in London
+hotels in Paris
