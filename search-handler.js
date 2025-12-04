@@ -20,15 +20,25 @@ class SearchHandler {
                 });
             });
 
-            // Log final URL (helpful for debugging redirects/consent pages)
-            const currentUrl = this.page.url();
+            // Log URL after navigation (may be consent.google.com)
+            let currentUrl = this.page.url();
             log(`Current URL after navigation: ${currentUrl}`, 'info');
 
-            // Handle possible consent / cookies page (EU-style "Before you continue")
+            // Try to handle possible consent / cookies page (EU-style)
             await this.handleConsentIfPresent();
 
+            // If we were on consent.google.com, wait a bit and log the new URL
+            currentUrl = this.page.url();
+            log(`Current URL after consent handling: ${currentUrl}`, 'info');
+
             await sleep(randomDelay(1000, 2000));
-            log('Google Maps loaded', 'success');
+
+            // Only claim "Google Maps loaded" if we actually see the Maps URL
+            if (currentUrl.includes('google.com/maps')) {
+                log('Google Maps loaded', 'success');
+            } else {
+                log('Google Maps UI may not be fully loaded yet (still not on google.com/maps)', 'warning');
+            }
 
             return true;
         } catch (error) {
@@ -95,26 +105,90 @@ class SearchHandler {
      */
     async handleConsentIfPresent() {
         try {
-            // Quick check if this looks like a consent page
+            const url = this.page.url();
+
+            // If we are on consent.google.com, we are definitely on a consent page
+            if (url.includes('consent.google.com')) {
+                log('Detected consent.google.com, trying to accept...', 'info');
+
+                const clicked = await this.page.evaluate(() => {
+                    const buttons = Array.from(document.querySelectorAll('button, div[role="button"], span[role="button"]'));
+
+                    // Try language-specific / generic texts first
+                    const matchTexts = [
+                        // English
+                        'accept all',
+                        'i agree',
+                        'accept',
+                        'got it',
+                        'accept & continue',
+                        // Persian
+                        'موافقم',
+                        'پذیرفتن',
+                        'قبول می‌کنم',
+                        // German (common on EU servers)
+                        'alle akzeptieren',
+                        'zustimmen',
+                        'ich stimme zu',
+                        'akzeptieren'
+                    ];
+
+                    // 1) Try to find by text
+                    for (const el of buttons) {
+                        const txt = (el.innerText || '').toLowerCase().trim();
+                        if (!txt) continue;
+                        if (matchTexts.some(m => txt.includes(m))) {
+                            el.click();
+                            return true;
+                        }
+                    }
+
+                    // 2) Fallback: click the last primary-looking button
+                    if (buttons.length > 0) {
+                        buttons[buttons.length - 1].click();
+                        return true;
+                    }
+
+                    return false;
+                });
+
+                if (clicked) {
+                    log('Clicked consent button on consent.google.com, waiting for redirect...', 'info');
+
+                    // Wait for redirect away from consent.google.com (up to ~10 seconds)
+                    const start = Date.now();
+                    while (Date.now() - start < 10000) {
+                        await sleep(500);
+                        const newUrl = this.page.url();
+                        if (!newUrl.includes('consent.google.com')) {
+                            log(`Redirected from consent page to: ${newUrl}`, 'info');
+                            return true;
+                        }
+                    }
+
+                    log('Still on consent.google.com after clicking button', 'warning');
+                    return false;
+                } else {
+                    log('Consent page detected but no clickable button found', 'warning');
+                    return false;
+                }
+            }
+
+            // Fallback: detect consent text on non-consent.google.com pages
             const hasConsentText = await this.page.evaluate(() => {
                 const text = document.body.innerText.toLowerCase();
                 return text.includes('before you continue to google maps') ||
                     text.includes('قبل از ادامه') ||
                     text.includes('consent') ||
-                    text.includes('accept all') ||
-                    text.includes('accept cookies');
+                    text.includes('accept all');
             });
 
-            if (!hasConsentText) {
-                return false;
-            }
+            if (!hasConsentText) return false;
 
-            log('Detected possible consent page, trying to accept...', 'info');
+            log('Detected possible inline consent on google.com, trying to accept...', 'info');
 
-            // Try to click common consent/accept buttons
-            const clicked = await this.page.evaluate(() => {
+            const clickedInline = await this.page.evaluate(() => {
                 const candidates = Array.from(document.querySelectorAll('button, div[role="button"], span[role="button"]'));
-
                 const matchTexts = [
                     'accept all',
                     'i agree',
@@ -129,7 +203,6 @@ class SearchHandler {
                 for (const el of candidates) {
                     const txt = (el.innerText || '').toLowerCase().trim();
                     if (!txt) continue;
-
                     if (matchTexts.some(m => txt.includes(m))) {
                         el.click();
                         return true;
@@ -139,14 +212,14 @@ class SearchHandler {
                 return false;
             });
 
-            if (clicked) {
-                log('Clicked consent/accept button, waiting for Maps UI...', 'info');
+            if (clickedInline) {
+                log('Clicked inline consent button, waiting a bit...', 'info');
                 await sleep(2000);
-            } else {
-                log('Consent page detected but no suitable button found', 'warning');
+                return true;
             }
 
-            return clicked;
+            log('Inline consent detected but no suitable button found', 'warning');
+            return false;
         } catch (error) {
             log(`Consent handling error: ${error.message}`, 'warning');
             return false;
