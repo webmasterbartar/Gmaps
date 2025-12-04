@@ -166,10 +166,9 @@ class SimpleGoogleMapsScraper {
 
 // Run test
 async function main() {
-    // Test queries
+    // Test queries (single custom query)
     const testQueries = [
-        'restaurants in Dubai',
-        'coffee shops in London'
+        'فروشگاه مبل تهران'
     ];
 
     const scraper = new SimpleGoogleMapsScraper();
