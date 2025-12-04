@@ -1,23 +1,31 @@
 #!/bin/bash
 
-# Google Maps Scraper - Server Installation Script
-# For Ubuntu/Debian servers
+# Google Maps Scraper - CentOS/RHEL Installation Script
 
 set -e
 
 echo "=========================================="
-echo "Google Maps Scraper - Server Setup"
+echo "Google Maps Scraper - CentOS Server Setup"
 echo "=========================================="
+
+# Detect package manager
+if command -v dnf &> /dev/null; then
+    PKG_MGR="dnf"
+else
+    PKG_MGR="yum"
+fi
+
+echo "📦 Using package manager: $PKG_MGR"
 
 # Update system
 echo "📦 Updating system packages..."
-sudo apt-get update
+$PKG_MGR update -y
 
 # Install Node.js 18+
 echo "📦 Installing Node.js..."
 if ! command -v node &> /dev/null; then
-    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-    sudo apt-get install -y nodejs
+    curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
+    $PKG_MGR install -y nodejs
 else
     echo "✓ Node.js already installed"
 fi
@@ -28,31 +36,58 @@ npm --version
 # Install MongoDB
 echo "📦 Installing MongoDB..."
 if ! command -v mongod &> /dev/null; then
-    # Import MongoDB public key
-    curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | \
-        sudo gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor
+    # Create MongoDB repository file
+    cat > /etc/yum.repos.d/mongodb-org-7.0.repo <<EOF
+[mongodb-org-7.0]
+name=MongoDB Repository
+baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/7.0/x86_64/
+gpgcheck=1
+enabled=1
+gpgkey=https://www.mongodb.org/static/pgp/server-7.0.asc
+EOF
 
-    # Create list file
-    echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | \
-        sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
-
-    # Update and install
-    sudo apt-get update
-    sudo apt-get install -y mongodb-org
+    # Install MongoDB
+    $PKG_MGR install -y mongodb-org
 
     # Start MongoDB
-    sudo systemctl start mongod
-    sudo systemctl enable mongod
+    systemctl start mongod
+    systemctl enable mongod
 else
     echo "✓ MongoDB already installed"
 fi
 
-sudo systemctl status mongod --no-pager
+systemctl status mongod --no-pager || true
+
+# Install required dependencies for Puppeteer/Chrome
+echo "📦 Installing Chrome dependencies..."
+$PKG_MGR install -y \
+    alsa-lib \
+    atk \
+    cups-libs \
+    gtk3 \
+    libXcomposite \
+    libXcursor \
+    libXdamage \
+    libXext \
+    libXi \
+    libXrandr \
+    libXScrnSaver \
+    libXtst \
+    pango \
+    xorg-x11-fonts-100dpi \
+    xorg-x11-fonts-75dpi \
+    xorg-x11-fonts-cyrillic \
+    xorg-x11-fonts-misc \
+    xorg-x11-fonts-Type1 \
+    xorg-x11-utils \
+    nss \
+    nspr \
+    libxshmfence
 
 # Install PM2 for process management
 echo "📦 Installing PM2..."
 if ! command -v pm2 &> /dev/null; then
-    sudo npm install -g pm2
+    npm install -g pm2
 else
     echo "✓ PM2 already installed"
 fi
@@ -82,15 +117,17 @@ echo "=========================================="
 echo ""
 echo "Next steps:"
 echo "1. Edit .env file: nano .env"
+echo "   (Set HEADLESS=true for server)"
 echo "2. Add your queries: nano queries.txt"
-echo "3. Start scraper: pm2 start index.js --name google-maps-scraper"
-echo "4. View logs: pm2 logs google-maps-scraper"
+echo "3. Start scraper: pm2 start index.js --name gmaps-scraper"
+echo "4. View logs: pm2 logs gmaps-scraper"
 echo "5. Monitor: pm2 monit"
 echo ""
-echo "PM2 useful commands:"
+echo "Useful commands:"
 echo "  pm2 list          - List all processes"
 echo "  pm2 stop 0        - Stop process"
 echo "  pm2 restart 0     - Restart process"
-echo "  pm2 delete 0      - Delete process"
-echo "  pm2 save          - Save current process list"
+echo "  pm2 logs 0        - View logs"
+echo "  pm2 save          - Save process list"
+echo "  pm2 startup       - Auto-start on reboot"
 echo ""
