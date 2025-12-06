@@ -12,9 +12,9 @@ import ContactExtractor from './contact-extractor.js';
 import { log, sleep, isMemoryHigh, getMemoryUsage, formatNumber, estimateTimeRemaining } from './utils.js';
 
 class GoogleMapsScraper {
-    constructor() {
+    constructor(dbName = null) {
         this.browserManager = new BrowserManager();
-        this.dbManager = new DatabaseManager();
+        this.dbManager = new DatabaseManager(dbName);
         this.queryManager = new QueryManager(this.dbManager);
         this.stats = {
             totalQueries: 0,
@@ -298,11 +298,15 @@ async function main() {
     const args = process.argv.slice(2);
 
     let queriesFile = 'queries.txt';
+    let dbName = null;
 
     // Parse arguments
     for (let i = 0; i < args.length; i++) {
         if (args[i] === '--file' || args[i] === '-f') {
             queriesFile = args[i + 1];
+        }
+        if (args[i] === '--db-name' || args[i] === '-d') {
+            dbName = args[i + 1];
         }
         if (args[i] === '--help' || args[i] === '-h') {
             console.log(`
@@ -312,18 +316,21 @@ Usage:
   node index.js [options]
 
 Options:
-  --file, -f <path>    Path to queries file (default: queries.txt)
-  --help, -h           Show this help message
+  --file, -f <path>       Path to queries file (default: queries.txt)
+  --db-name, -d <name>     Database name (default: google_maps_scraper)
+  --help, -h              Show this help message
 
 Examples:
   node index.js --file my_queries.txt
+  node index.js --file queries_elevator.txt --db-name elevator_scraper
+  node index.js --file queries_painting.txt --db-name painting_scraper
   npm start
       `);
             process.exit(0);
         }
     }
 
-    const scraper = new GoogleMapsScraper();
+    const scraper = new GoogleMapsScraper(dbName);
 
     // Handle graceful shutdown
     process.on('SIGINT', async () => {

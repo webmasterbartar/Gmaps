@@ -3,11 +3,12 @@ import config from './config.js';
 import { log, getTimestamp } from './utils.js';
 
 class DatabaseManager {
-    constructor() {
+    constructor(dbName = null) {
         this.client = null;
         this.db = null;
         this.collections = {};
         this.isConnected = false;
+        this.dbName = dbName || config.mongodb.dbName;
     }
 
     /**
@@ -24,7 +25,7 @@ class DatabaseManager {
             });
 
             await this.client.connect();
-            this.db = this.client.db(config.mongodb.dbName);
+            this.db = this.client.db(this.dbName);
 
             // Get collections
             this.collections.contacts = this.db.collection(config.mongodb.collections.contacts);
@@ -34,7 +35,7 @@ class DatabaseManager {
             await this.createIndexes();
 
             this.isConnected = true;
-            log(`Connected to MongoDB: ${config.mongodb.dbName}`, 'success');
+            log(`Connected to MongoDB: ${this.dbName}`, 'success');
         } catch (error) {
             log(`MongoDB connection failed: ${error.message}`, 'error');
             throw error;
