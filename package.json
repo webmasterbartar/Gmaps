@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "test": "node index.js --test-mode --queries 5"
+    "test": "node index.js --test-mode --queries 5",
+    "export": "node export-results.js"
   },
   "keywords": [
     "puppeteer",
