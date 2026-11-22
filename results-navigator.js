@@ -18,7 +18,7 @@ class ResultsNavigator {
 
             let previousHeight = 0;
             let scrollAttempts = 0;
-            const maxScrollAttempts = 50; // Prevent infinite loops
+            const maxScrollAttempts = Math.min(8, Number(process.env.MAX_SCROLL_ATTEMPTS || 8)); // Bound each search
             let noNewResultsCount = 0;
 
             while (scrollAttempts < maxScrollAttempts) {
@@ -41,11 +41,8 @@ class ResultsNavigator {
 
                     // If height hasn't changed for 3 attempts, we're at the end
                     if (noNewResultsCount >= 3) {
-                        const endReached = await this.detectEndOfResults();
-                        if (endReached) {
-                            log('Reached end of results', 'success');
-                            break;
-                        }
+                        log('No additional results loaded; moving to extraction', 'info');
+                        break;
                     }
                 } else {
                     noNewResultsCount = 0;
@@ -127,7 +124,7 @@ class ResultsNavigator {
             const businesses = await this.page.evaluate(() => {
                 const results = document.querySelectorAll('div[role="feed"] > div > div > a');
 
-                return Array.from(results).map((element, index) => {
+                return Array.from(results).slice(0, config.scraper.maxResultsPerQuery).map((element, index) => {
                     // Get business name from aria-label
                     const ariaLabel = element.getAttribute('aria-label');
 
