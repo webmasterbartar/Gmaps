@@ -54,30 +54,11 @@ class SearchHandler {
         try {
             log(`Searching for: "${query}"`, 'info');
 
-            // Find search box (support multiple possible selectors / layouts)
-            const searchBoxSelectors = [
-                'input#searchboxinput',                                   // standard desktop
-                'input[aria-label*="Search Google Maps"]',                // English aria-label
-                'input[aria-label*="جستجو در Google Maps"]',              // Persian aria-label variant
-                'input[aria-label*="Search in Google Maps"]'
-            ];
-
-            const combinedSelector = searchBoxSelectors.join(', ');
-
-            await this.page.waitForSelector(combinedSelector, { timeout: 15000 });
-
-            // Clear any existing text
-            await this.page.click(combinedSelector, { clickCount: 3 });
-            await this.page.keyboard.press('Backspace');
-            await sleep(randomDelay(300, 600));
-
-            // Type query with human-like delay
-            await this.page.type(combinedSelector, query, { delay: randomDelay(50, 150) });
-            await sleep(randomDelay(500, 1000));
-
-            // Press Enter to search
-            await this.page.keyboard.press('Enter');
-
+            // Direct Maps search URLs are more robust than localized search-box selectors.
+            // Keep the same result extraction logic after navigation.
+            const searchUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query);
+            await this.page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
+            await this.handleConsentIfPresent();
             // Wait for results to load
             await sleep(randomDelay(
                 config.delays.minSearchDelay,
