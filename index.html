@@ -1,0 +1,65 @@
+<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>جستجوی پیچ و مهره | Gmaps</title>
+<style>body{font-family:Tahoma,Arial,sans-serif;max-width:1050px;margin:35px auto;padding:0 18px;background:#f6f8fc;color:#18253f}main{background:#fff;padding:26px;border-radius:16px;box-shadow:0 6px 30px #162d4d12}h1{font-size:24px}label{display:block;font-weight:600;margin-top:14px}textarea,input{box-sizing:border-box;width:100%;padding:12px;border:1px solid #b9c7dd;border-radius:9px;font:inherit}textarea{min-height:180px}button{border:0;padding:12px 22px;margin:12px 0 6px 8px;background:#215ee0;color:white;border-radius:9px;font:inherit;cursor:pointer}button:disabled{opacity:.45;cursor:default}.muted{color:#58657b;line-height:1.8}.notice{background:#fff4d2;padding:12px;border-radius:8px}#progress{padding:12px;background:#edf4ff;border-radius:8px;white-space:pre-wrap}table{border-collapse:collapse;width:100%;margin-top:15px;font-size:13px}td,th{border:1px solid #dee3ec;padding:8px;text-align:right}a{color:#215ee0}#log{font-size:12px;white-space:pre-wrap;max-height:130px;overflow:auto}</style></head><body><main><h1>🗺️ استخراج کسب‌وکارهای پیچ و مهره</h1><p class="muted">جستجو برای هر شهر به صورت مرحله‌ای انجام می‌شود. پیش‌فرض، مراکز ۳۱ استان است؛ برای تمام شهرهای ایران باید فهرست کامل را جایگزین کنید.</p>
+<p class="notice">این نسخه از Google Places API استفاده می‌کند و به کلید فعال با Billing نیاز دارد. ممکن است هزینه مصرف API داشته باشد. هر شهر حداکثر ۶۰ نتیجه و کلید API فقط در تنظیمات سرور نگهداری می‌شود.</p>
+<label for="keyword">عبارت جستجو</label><input id="keyword" value="پیچ و مهره">
+<label for="cities">شهرها (هر شهر در یک خط)</label><textarea id="cities">تهران
+مشهد
+اصفهان
+شیراز
+تبریز
+کرج
+قم
+اهواز
+کرمانشاه
+ارومیه
+رشت
+زاهدان
+همدان
+کرمان
+یزد
+اردبیل
+بندرعباس
+اراک
+زنجان
+سنندج
+قزوین
+خرم‌آباد
+گرگان
+ساری
+بوشهر
+بیرجند
+ایلام
+شهرکرد
+یاسوج
+سمنان
+بجنورد</textarea>
+<div><button id="start">شروع استخراج</button><button id="stop" disabled>توقف پس از درخواست‌های جاری</button><button id="download" disabled>دریافت CSV</button></div>
+<div id="progress" role="status">آماده شروع</div><div id="log"></div>
+<div style="overflow:auto"><table><thead><tr><th>شهر</th><th>نام</th><th>شماره تماس</th><th>آدرس</th><th>وب‌سایت</th></tr></thead><tbody id="rows"></tbody></table></div></main>
+<script>
+const $=id=>document.getElementById(id);let stopped=false,results=[],done=0,total=0;
+function csv(){const lines=[['شهر','نام','تلفن','آدرس','وب‌سایت'],...results.map(r=>[r.city,r.name,r.phone,r.address,r.website])];return '\uFEFF'+lines.map(row=>row.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\r\n')}
+$('download').onclick=()=>{const blob=new Blob([csv()],{type:'text/csv;charset=utf-8'});const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='gmaps-bolt-nut.csv';a.click();URL.revokeObjectURL(u)};
+$('stop').onclick=()=>{stopped=true;$('stop').disabled=true};
+function update(){ $('progress').textContent='شهرهای بررسی‌شده: '+done+' / '+total+' | کسب‌وکارهای یکتا: '+results.length;$('download').disabled=!results.length }
+$('start').onclick=async()=>{
+  const cities=[...new Set($('cities').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean))];
+  if(!cities.length)return alert('ابتدا شهرها را وارد کنید');
+  $('start').disabled=true;$('stop').disabled=false;$('rows').replaceChildren();$('log').textContent='';stopped=false;done=0;total=cities.length;results=[];update();
+  const known=new Set();let cursor=0;
+  async function worker(){while(!stopped&&cursor<cities.length){
+    const city=cities[cursor++];
+    try{
+      const response=await fetch('/api/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({city,keyword:$('keyword').value})});
+      const data=await response.json();if(!response.ok)throw Error(data.error||'HTTP '+response.status);
+      for(const r of data.results||[]){if(known.has(r.id))continue;known.add(r.id);results.push(r);
+        const tr=document.createElement('tr');for(const value of [r.city,r.name,r.phone,r.address,r.website]){const td=document.createElement('td');td.textContent=value||'';tr.appendChild(td)}$('rows').appendChild(tr)}
+      $('log').textContent+=city+': '+data.count+' نتیجه\n';
+    }catch(e){$('log').textContent+=city+': خطا - '+e.message+'\n';if(/GOOGLE_MAPS_API_KEY|API key|billing|PERMISSION_DENIED/i.test(e.message))stopped=true}
+    done++;update();
+  }}
+  await Promise.all([worker(),worker()]);
+  $('progress').textContent+=' | '+(stopped?'متوقف شد':'پایان جستجو');
+  $('start').disabled=false;$('stop').disabled=true;
+};
+</script></body></html>
