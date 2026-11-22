@@ -1,65 +1,29 @@
-<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>جستجوی پیچ و مهره | Gmaps</title>
-<style>body{font-family:Tahoma,Arial,sans-serif;max-width:1050px;margin:35px auto;padding:0 18px;background:#f6f8fc;color:#18253f}main{background:#fff;padding:26px;border-radius:16px;box-shadow:0 6px 30px #162d4d12}h1{font-size:24px}label{display:block;font-weight:600;margin-top:14px}textarea,input{box-sizing:border-box;width:100%;padding:12px;border:1px solid #b9c7dd;border-radius:9px;font:inherit}textarea{min-height:180px}button{border:0;padding:12px 22px;margin:12px 0 6px 8px;background:#215ee0;color:white;border-radius:9px;font:inherit;cursor:pointer}button:disabled{opacity:.45;cursor:default}.muted{color:#58657b;line-height:1.8}.notice{background:#fff4d2;padding:12px;border-radius:8px}#progress{padding:12px;background:#edf4ff;border-radius:8px;white-space:pre-wrap}table{border-collapse:collapse;width:100%;margin-top:15px;font-size:13px}td,th{border:1px solid #dee3ec;padding:8px;text-align:right}a{color:#215ee0}#log{font-size:12px;white-space:pre-wrap;max-height:130px;overflow:auto}</style></head><body><main><h1>🗺️ استخراج کسب‌وکارهای پیچ و مهره</h1><p class="muted">جستجو برای هر شهر به صورت مرحله‌ای انجام می‌شود. پیش‌فرض، مراکز ۳۱ استان است؛ برای تمام شهرهای ایران باید فهرست کامل را جایگزین کنید.</p>
-<p class="notice">این نسخه از Google Places API استفاده می‌کند و به کلید فعال با Billing نیاز دارد. ممکن است هزینه مصرف API داشته باشد. هر شهر حداکثر ۶۰ نتیجه و کلید API فقط در تنظیمات سرور نگهداری می‌شود.</p>
-<label for="keyword">عبارت جستجو</label><input id="keyword" value="پیچ و مهره">
-<label for="cities">شهرها (هر شهر در یک خط)</label><textarea id="cities">تهران
-مشهد
-اصفهان
-شیراز
-تبریز
-کرج
-قم
-اهواز
-کرمانشاه
-ارومیه
-رشت
-زاهدان
-همدان
-کرمان
-یزد
-اردبیل
-بندرعباس
-اراک
-زنجان
-سنندج
-قزوین
-خرم‌آباد
-گرگان
-ساری
-بوشهر
-بیرجند
-ایلام
-شهرکرد
-یاسوج
-سمنان
-بجنورد</textarea>
-<div><button id="start">شروع استخراج</button><button id="stop" disabled>توقف پس از درخواست‌های جاری</button><button id="download" disabled>دریافت CSV</button></div>
-<div id="progress" role="status">آماده شروع</div><div id="log"></div>
-<div style="overflow:auto"><table><thead><tr><th>شهر</th><th>نام</th><th>شماره تماس</th><th>آدرس</th><th>وب‌سایت</th></tr></thead><tbody id="rows"></tbody></table></div></main>
-<script>
-const $=id=>document.getElementById(id);let stopped=false,results=[],done=0,total=0;
-function csv(){const lines=[['شهر','نام','تلفن','آدرس','وب‌سایت'],...results.map(r=>[r.city,r.name,r.phone,r.address,r.website])];return '\uFEFF'+lines.map(row=>row.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\r\n')}
-$('download').onclick=()=>{const blob=new Blob([csv()],{type:'text/csv;charset=utf-8'});const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='gmaps-bolt-nut.csv';a.click();URL.revokeObjectURL(u)};
-$('stop').onclick=()=>{stopped=true;$('stop').disabled=true};
-function update(){ $('progress').textContent='شهرهای بررسی‌شده: '+done+' / '+total+' | کسب‌وکارهای یکتا: '+results.length;$('download').disabled=!results.length }
-$('start').onclick=async()=>{
-  const cities=[...new Set($('cities').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean))];
-  if(!cities.length)return alert('ابتدا شهرها را وارد کنید');
-  $('start').disabled=true;$('stop').disabled=false;$('rows').replaceChildren();$('log').textContent='';stopped=false;done=0;total=cities.length;results=[];update();
-  const known=new Set();let cursor=0;
-  async function worker(){while(!stopped&&cursor<cities.length){
-    const city=cities[cursor++];
-    try{
-      const response=await fetch('/api/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({city,keyword:$('keyword').value})});
-      const data=await response.json();if(!response.ok)throw Error(data.error||'HTTP '+response.status);
-      for(const r of data.results||[]){if(known.has(r.id))continue;known.add(r.id);results.push(r);
-        const tr=document.createElement('tr');for(const value of [r.city,r.name,r.phone,r.address,r.website]){const td=document.createElement('td');td.textContent=value||'';tr.appendChild(td)}$('rows').appendChild(tr)}
-      $('log').textContent+=city+': '+data.count+' نتیجه\n';
-    }catch(e){$('log').textContent+=city+': خطا - '+e.message+'\n';if(/GOOGLE_MAPS_API_KEY|API key|billing|PERMISSION_DENIED/i.test(e.message))stopped=true}
-    done++;update();
-  }}
-  await Promise.all([worker(),worker()]);
-  $('progress').textContent+=' | '+(stopped?'متوقف شد':'پایان جستجو');
-  $('start').disabled=false;$('stop').disabled=true;
-};
-</script></body></html>
+<!doctype html>
+<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="خروجی اسکریپر Gmaps از جستجوی پیچ و مهره در ۳۱ استان ایران"><title>Gmaps | گزارش پیچ و مهره</title>
+<style>
+:root{font-family:Tahoma,Arial,sans-serif;color:#162b46;background:#f4f7fc}*{box-sizing:border-box}
+body{margin:0;padding:4vw 16px}main{max-width:860px;margin:auto;background:#fff;padding:clamp(20px,5vw,45px);border-radius:22px;box-shadow:0 12px 40px #10213e10}
+h1{font-size:clamp(23px,4vw,33px);line-height:1.6;margin:0 0 12px}.sub{color:#65748d;line-height:2}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:26px 0}
+.metric{border:1px solid #dbe3ee;border-radius:13px;padding:18px 9px;text-align:center}.metric strong{font-size:29px;display:block;color:#1557bf}.metric span{font-size:13px;color:#637187;line-height:1.8}
+.links{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:22px 0}
+.link{padding:15px 17px;color:#fff;background:#1761d2;border-radius:12px;text-align:center;text-decoration:none;line-height:1.8;font-weight:bold}.link.alt{background:#103b70}
+.note{padding:18px;background:#f5f8fc;border-radius:12px;color:#52627d;line-height:2;font-size:14px}
+code{direction:ltr;unicode-bidi:isolate}small{color:#687b92}@media(max-width:600px){.grid{grid-template-columns:1fr 1fr}.links{grid-template-columns:1fr}}
+</style></head><body><main>
+<h1>گزارش جست‌وجوی «پیچ و مهره»</h1>
+<p class="sub">خروجی واقعی اسکریپر اصلی Gmaps (Puppeteer) در Vercel Sandbox — ۲۲ نوامبر ۲۰۲۶. بدون نیاز به MongoDB.</p>
+<section class="grid" aria-label="آمار اجرا">
+<div class="metric"><strong>۳۱</strong><span>استان بررسی‌شده</span></div>
+<div class="metric"><strong>۲۲۶</strong><span>رکورد یکتا</span></div>
+<div class="metric"><strong>۲۰۰</strong><span>رکورد دارای تلفن</span></div>
+<div class="metric"><strong>۰</strong><span>کوئری ناموفق</span></div>
+</section>
+<div class="links">
+<a class="link" href="https://gmaps-j271q887s-barbodacademysite-1377s-projects.vercel.app/gmaps-pich-mohreh-31-ostan.xlsx">دریافت فایل اکسل (XLSX)</a>
+<a class="link alt" href="https://gmaps-non7x8yuz-barbodacademysite-1377s-projects.vercel.app/gmaps-data-json-csv.zip">دریافت JSON و CSV (ZIP)</a>
+</div>
+<div class="note">این صفحه گزارش اجرای انجام‌شده است، نه اجرای خودکار اسکریپر با هر بازدید. فایل <code>queries.txt</code> شامل هر ۳۱ استان است. در این نوبت به‌دلیل محدودیت زمان، حداکثر ۱۲ کسب‌وکار در هر استان برای استخراج جزئیات انتخاب شده‌اند (به‌استثنای تست اولیه تهران). از ۳۱ استان، برای ۲۹ استان رکورد تماس ذخیره شده است. بنابراین این مجموعه فهرست جامع تمام کسب‌وکارهای ایران نیست.</div>
+<p><small>کد اسکریپر و روش خروجی JSON/Excel در <a href="https://github.com/webmasterbartar/Gmaps">GitHub / Gmaps</a> قرار دارد.</small></p>
+</main></body></html>
