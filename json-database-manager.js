@@ -48,7 +48,7 @@ export default class JsonDatabaseManager {
   async getStats(){
     const groups={};
     for(const c of this.contacts)groups[c.sourceQuery]=(groups[c.sourceQuery]||0)+1;
-    return {totalContacts:this.contacts.length,completedQueries:Object.values(this.progress).filter(v=>v.status==='completed').length,failedQueries:Object.values(this.progress).filter(v=>v.status==='failed').length,inProgressQueries:Object.values(this.progress).filter(v=>v.status==='in_progress').length,topQueries:Object.entries(groups).sort((a,b)=>b[1]-a[1]).map(([_id,count])=>({query:_id,count})).slice(0,10)};
+    return {totalContacts:this.contacts.length,completedQueries:Object.values(this.progress).filter(v=>v.status==='completed').length,failedQueries:Object.values(this.progress).filter(v=>v.status==='failed').length,inProgressQueries:Object.values(this.progress).filter(v=>v.status==='in_progress').length,topQueries:Object.entries(groups).sort((a,b)=>b[1]-a[1]).map(([query,contacts])=>({query,contacts})).slice(0,10)};
   }
   async close(){this.isConnected=false}
 }
