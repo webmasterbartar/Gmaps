@@ -121,10 +121,10 @@ class ResultsNavigator {
      */
     async getAllBusinessListings() {
         try {
-            const businesses = await this.page.evaluate(() => {
+            const businesses = await this.page.evaluate((limit) => {
                 const results = document.querySelectorAll('div[role="feed"] > div > div > a');
 
-                return Array.from(results).slice(0, config.scraper.maxResultsPerQuery).map((element, index) => {
+                return Array.from(results).slice(0, limit).map((element, index) => {
                     // Get business name from aria-label
                     const ariaLabel = element.getAttribute('aria-label');
 
@@ -138,7 +138,7 @@ class ResultsNavigator {
                         element: index // Store index to find element later
                     };
                 });
-            });
+            }, config.scraper.maxResultsPerQuery);
 
             log(`Extracted ${businesses.length} business listings`, 'success');
             return businesses;
