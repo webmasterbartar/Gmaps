@@ -18,3 +18,6 @@ mongodb-data/
 
 # PM2
 .pm2/
+
+# Scraped JSON and Excel files stay local unless explicitly shared
+output/
